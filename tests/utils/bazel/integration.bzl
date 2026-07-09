@@ -10,8 +10,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
+load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files")
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("@score_itf//:defs.bzl", "py_itf_test")
 load("@score_lifecycle_pip//:requirements.bzl", "all_requirements")
+load("//:defs.bzl", "launch_manager_config")
 load("//tests/utils/bazel:constants.bzl", "SCORE_TEST_INSTALL_PREFIX")
 
 def integration_test(name, srcs, test_binaries, args = [], deps = [], data = [], install_prefix = SCORE_TEST_INSTALL_PREFIX, **kwargs):
@@ -56,5 +59,56 @@ def integration_test(name, srcs, test_binaries, args = [], deps = [], data = [],
             "//config:host": ["//tests/utils/plugins:localhost_plugin"],
             "//conditions:default": [],
         }),
+        **kwargs
+    )
+
+def lm_integration_test(name, config, srcs, main_files, deps = [], tags = [], **kwargs):
+    """Creates a complete LCM integration test.
+
+    Wraps the common boilerplate present in every integration test: generating
+    the LM flatbuffer config, packaging binaries and config into a tar archive,
+    and creating the integration test target.
+
+    Args:
+        name:       Test name, also used to derive all intermediate target names.
+        config:     Label of the JSON config file passed to launch_manager_config.
+        srcs:       Python test source files.
+        main_files: Targets to include as test binaries (mode 0755).
+        deps:       Additional Python test dependencies.
+        tags:       Additional Bazel tags ("integration" is always included).
+    """
+    launch_manager_config(
+        name = "lm_" + name + "_config",
+        config = config,
+        flatbuffer_out_dir = "etc",
+    )
+
+    pkg_files(
+        name = name + "_etc_files",
+        srcs = [":lm_" + name + "_config"],
+        prefix = "tests/" + name,
+    )
+
+    pkg_files(
+        name = name + "_main_files",
+        srcs = main_files,
+        attributes = pkg_attributes(mode = "0755"),
+        prefix = "tests/" + name,
+    )
+
+    pkg_tar(
+        name = name + "_binaries",
+        srcs = [
+            ":" + name + "_etc_files",
+            ":" + name + "_main_files",
+        ],
+    )
+
+    integration_test(
+        name = name,
+        srcs = srcs,
+        tags = ["integration"] + tags,
+        test_binaries = ":" + name + "_binaries",
+        deps = ["//tests/utils/testing_utils"] + deps,
         **kwargs
     )

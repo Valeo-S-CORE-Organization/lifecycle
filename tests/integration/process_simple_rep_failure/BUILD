@@ -10,16 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
-load("@rules_pkg//pkg:mappings.bzl", "pkg_attributes", "pkg_files")
-load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
-load("//:defs.bzl", "launch_manager_config")
-load("//tests/utils/bazel:integration.bzl", "integration_test")
-
-launch_manager_config(
-    name = "lm_process_simple_rep_failure_config",
-    config = "//tests/integration/process_simple_rep_failure:process_simple_rep_failure.json",
-    flatbuffer_out_dir = "etc",
-)
+load("//tests/utils/bazel:integration.bzl", "lm_integration_test")
 
 cc_binary(
     name = "control_client_mock",
@@ -42,36 +33,14 @@ cc_binary(
     ],
 )
 
-pkg_files(
-    name = "process_simple_rep_failure_main_files",
-    srcs = [
+lm_integration_test(
+    name = "process_simple_rep_failure",
+    config = "//tests/integration/process_simple_rep_failure:process_simple_rep_failure.json",
+    srcs = ["process_simple_rep_failure.py"],
+    main_files = [
         ":control_client_mock",
         ":process_simple_reporting",
         "//score/launch_manager",
         "//tests/utils/test_helper:verification_process",
     ],
-    attributes = pkg_attributes(mode = "0755"),
-    prefix = "tests/process_simple_rep_failure",
-)
-
-pkg_files(
-    name = "process_simple_rep_failure_etc_files",
-    srcs = [":lm_process_simple_rep_failure_config"],
-    prefix = "tests/process_simple_rep_failure",
-)
-
-pkg_tar(
-    name = "process_simple_rep_failure_binaries",
-    srcs = [
-        ":process_simple_rep_failure_etc_files",
-        ":process_simple_rep_failure_main_files",
-    ],
-)
-
-integration_test(
-    name = "process_simple_rep_failure",
-    srcs = ["process_simple_rep_failure.py"],
-    tags = ["integration"],
-    test_binaries = ":process_simple_rep_failure_binaries",
-    deps = ["//tests/utils/testing_utils"],
 )
