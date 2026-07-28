@@ -10,7 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
-load("@rules_cc//cc:defs.bzl", "cc_library", "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//tests/utils/bazel:unit_test.bzl", "lm_cc_test")
 
 cc_library(
     name = "recovery_client",
@@ -32,7 +33,7 @@ cc_library(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "recovery_client_UT",
     srcs = ["recovery_client_UT.cpp"],
     deps = [

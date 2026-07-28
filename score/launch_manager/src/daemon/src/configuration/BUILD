@@ -12,6 +12,7 @@
 # *******************************************************************************
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@score_baselibs//score/flatbuffers/bazel:codegen.bzl", "generate_cpp")
+load("//tests/utils/bazel:unit_test.bzl", "lm_cc_test")
 
 filegroup(
     name = "new_lm_flatcfg_fbs",
@@ -35,7 +36,7 @@ cc_library(
     deps = ["@score_baselibs//score/language/futurecpp"],
 )
 
-cc_test(
+lm_cc_test(
     name = "config_UT",
     srcs = ["details/config_UT.cpp"],
     visibility = ["//score:__subpackages__"],
@@ -94,7 +95,7 @@ cc_library(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "flatbuffer_type_converters_UT",
     srcs = ["details/flatbuffer_type_converters_UT.cpp"],
     visibility = ["//tests:__subpackages__"],
@@ -105,7 +106,7 @@ cc_test(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "flatbuffer_config_loader_UT",
     srcs = ["details/flatbuffer_config_loader_UT.cpp"],
     visibility = ["//tests:__subpackages__"],
@@ -159,7 +160,7 @@ cc_library(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "configuration_adapter_UT",
     srcs = ["configuration_adapter_UT.cpp"],
     visibility = ["//tests:__subpackages__"],

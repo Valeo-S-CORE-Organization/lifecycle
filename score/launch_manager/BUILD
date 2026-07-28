@@ -11,6 +11,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//tests/utils/bazel:unit_test.bzl", "lm_cc_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -70,7 +71,7 @@ cc_library(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "exec_error_domain_UT",
     srcs = ["src/exec_error_domain_UT.cpp"],
     visibility = ["//visibility:private"],

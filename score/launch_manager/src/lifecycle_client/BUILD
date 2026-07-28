@@ -12,6 +12,7 @@
 # *******************************************************************************
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@score_baselibs//score/language/safecpp:toolchain_features.bzl", "COMPILER_WARNING_FEATURES")
+load("//tests/utils/bazel:unit_test.bzl", "lm_cc_test")
 
 cc_library(
     name = "lifecycle_client",
@@ -208,7 +209,7 @@ cc_library(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "lifecycle_mocks_UT",
     srcs = ["src/lifecycle_mocks_UT.cpp"],
     deps = [
@@ -218,7 +219,7 @@ cc_test(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "runapplication_UT",
     srcs = ["src/runapplication_UT.cpp"],
     deps = [

@@ -11,6 +11,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//tests/utils/bazel:unit_test.bzl", "lm_cc_test")
 
 cc_library(
     name = "data_structures",
@@ -56,7 +57,7 @@ cc_library(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "MonitorIfDaemon_UT",
     srcs = [
         "MonitorIfDaemon_UT.cpp",

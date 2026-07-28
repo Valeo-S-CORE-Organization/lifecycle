@@ -10,7 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("//tests/utils/bazel:unit_test.bzl", "lm_cc_test")
 
 cc_library(
     name = "workerthread",
@@ -38,7 +39,7 @@ cc_library(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "fixed_size_queue_test",
     srcs = ["fixed_size_queue_test.cpp"],
     visibility = ["//tests:__subpackages__"],
@@ -96,7 +97,7 @@ cc_library(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "mpsc_bounded_queue_test",
     srcs = ["mpsc_bounded_queue_test.cpp"],
     visibility = ["//tests:__subpackages__"],
@@ -106,7 +107,7 @@ cc_test(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "mpsc_bounded_queue_tsan_test",
     srcs = ["mpsc_bounded_queue_test.cpp"],
     copts = [
@@ -127,7 +128,7 @@ cc_test(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "mpmc_concurrent_queue_test",
     srcs = ["mpmc_concurrent_queue_test.cpp"],
     visibility = ["//tests:__subpackages__"],
@@ -137,7 +138,7 @@ cc_test(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "mpmc_concurrent_queue_helgrind_test",
     srcs = ["mpmc_concurrent_queue_test.cpp"],
     data = ["mpmc_concurrent_queue_test_helgrind.supp"],
@@ -151,7 +152,7 @@ cc_test(
     ],
 )
 
-cc_test(
+lm_cc_test(
     name = "mpmc_concurrent_queue_tsan_test",
     srcs = ["mpmc_concurrent_queue_test.cpp"],
     copts = [
