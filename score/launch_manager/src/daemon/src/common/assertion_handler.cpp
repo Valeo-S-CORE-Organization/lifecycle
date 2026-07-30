@@ -11,16 +11,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
 
-#include "score/mw/launch_manager/testing/assertion_handler.hpp"
+#include "score/mw/launch_manager/common/assertion_handler.hpp"
 
 namespace
 {
 
-// Registers the assertion handler at static-initialization time so every unit
-// test binary that links this library gets diagnostic output on assertion failure
-// without any explicit setup call.
+// Registers the assertion handler at static-initialization time so every binary
+// that links this library gets diagnostic output on assertion failure without any
+// explicit setup call.
 const bool kAssertionHandlerRegistered = []() noexcept {
-    score::lcm::testing::registerAssertionHandler();
+    score::lcm::common::registerAssertionHandler();
     return true;
 }();
 

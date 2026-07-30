@@ -10,7 +10,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # *******************************************************************************
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//tests/utils/bazel:unit_test.bzl", "lm_cc_test")
+
+cc_library(
+    name = "assertion_handler",
+    srcs = ["assertion_handler.cpp"],
+    hdrs = ["assertion_handler.hpp"],
+    include_prefix = "score/mw/launch_manager/common",
+    strip_include_prefix = "/score/launch_manager/src/daemon/src/common",
+    visibility = ["//score/launch_manager:__subpackages__"],
+    deps = ["@score_baselibs//score/language/futurecpp"],
+    alwayslink = True,
+)
 
 cc_library(
     name = "identifier_hash",

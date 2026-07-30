@@ -29,6 +29,6 @@ def lm_cc_test(name, deps = [], **kwargs):
     """
     cc_test(
         name = name,
-        deps = deps + ["//score/launch_manager/src/testing:testing_assertion_handler"],
+        deps = deps + ["//score/launch_manager/src/daemon/src/common:assertion_handler"],
         **kwargs
     )

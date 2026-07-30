@@ -26,6 +26,7 @@ cc_binary(
     visibility = ["//score/launch_manager:__subpackages__"],
     deps = [
         "//score/launch_manager/src/daemon/src/alive_monitor",
+        "//score/launch_manager/src/daemon/src/common:assertion_handler",
         "//score/launch_manager/src/daemon/src/common:log",
         "//score/launch_manager/src/daemon/src/osal:ipc_comms",
         "//score/launch_manager/src/daemon/src/process_group_manager",

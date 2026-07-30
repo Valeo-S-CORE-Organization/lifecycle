@@ -11,14 +11,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ********************************************************************************/
 
-#pragma once
+#ifndef ASSERTION_HANDLER_HPP_INCLUDED
+#define ASSERTION_HANDLER_HPP_INCLUDED
 
 #include <score/assert.hpp>
 
 #include <iostream>
 #include <sstream>
 
-namespace score::lcm::testing
+namespace score::lcm::common
 {
 
 inline void registerAssertionHandler() noexcept
@@ -37,4 +38,6 @@ inline void registerAssertionHandler() noexcept
     });
 }
 
-}  // namespace score::lcm::testing
+}  // namespace score::lcm::common
+
+#endif  // ASSERTION_HANDLER_HPP_INCLUDED
