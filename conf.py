@@ -25,25 +25,13 @@ from pathlib import Path
 
 project = "Lifecycle and Health Management"
 project_url = "https://eclipse-score.github.io/lifecycle/"
-project_prefix = "LIFE_"
-author = "S-CORE"
 version = "0.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 
-extensions = [
-    "sphinx_design",
-    "sphinx_needs",
-    "sphinxcontrib.plantuml",
-    "score_plantuml",
-    "score_metamodel",
-    "score_draw_uml_funcs",
-    "score_source_code_linker",
-    "score_layout",
-    "myst_parser",
-]
+extensions = ["score_sphinx_bundle"]
 
 include_patterns = [
     "index.rst",
@@ -62,11 +50,6 @@ exclude_patterns = [
     "bazel-*",
     ".venv_docs",
 ]
-
-templates_path = ["templates"]
-
-# Enable numref
-numfig = True
 
 
 def setup(app):
