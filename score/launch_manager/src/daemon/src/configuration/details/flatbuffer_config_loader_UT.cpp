@@ -290,8 +290,8 @@ TEST_F(FlatbufferConfigLoaderTest, LoadSingleComponentWithFileState)
     auto sandbox = buildDefaultSandbox(fbb);
     auto deploy = fb::CreateDeploymentConfig(
         fbb,
-        1.5 /*ready_timeout*/,
-        2.5 /*shutdown_timeout*/,
+        1500 /*ready_timeout_ms*/,
+        2500 /*shutdown_timeout_ms*/,
         0 /*environmental_variables*/,
         bin_dir,
         work_dir,
@@ -355,7 +355,8 @@ TEST_F(FlatbufferConfigLoaderTest, ConfiguredOffRunTargetIsLoadedVerbatim)
     auto switch_action = fb::CreateSwitchRunTargetAction(fbb, switch_target);
     auto rt_name = fbb.CreateString(kOffRunTargetName);
     auto rt_desc = fbb.CreateString("Configured off state");
-    auto rt = fb::CreateRunTarget(fbb, rt_name, rt_desc, 0 /*depends_on*/, 2.0 /*transition_timeout*/, switch_action);
+    auto rt =
+        fb::CreateRunTarget(fbb, rt_name, rt_desc, 0 /*depends_on*/, 2000 /*transition_timeout_ms*/, switch_action);
     auto rts = fbb.CreateVector(std::vector<::flatbuffers::Offset<fb::RunTarget>>{rt});
 
     auto result = loadBuffer(buildConfigWithRunTargets(fbb, rts));
