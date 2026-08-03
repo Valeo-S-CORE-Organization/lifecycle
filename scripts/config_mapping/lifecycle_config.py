@@ -363,7 +363,9 @@ def gen_config(output_dir, config, input_filename):
             restart = rra.get("restart", rra)
             deployment["ready_recovery_action"] = {
                 "number_of_attempts": restart.get("number_of_attempts", 0),
-                "delay_before_restart_ms": sec_to_ms(restart.get("delay_before_restart", 0)),
+                "delay_before_restart_ms": sec_to_ms(
+                    restart.get("delay_before_restart", 0)
+                ),
             }
 
         if "recovery_action" in depl_cfg:
@@ -408,9 +410,9 @@ def gen_config(output_dir, config, input_filename):
     out["fallback_run_target"] = fb_out
 
     out["alive_supervision"] = {
-        "evaluation_cycle_ms": sec_to_ms(config.get("alive_supervision", {}).get(
-            "evaluation_cycle", 0.5
-        )),
+        "evaluation_cycle_ms": sec_to_ms(
+            config.get("alive_supervision", {}).get("evaluation_cycle", 0.5)
+        ),
     }
 
     watchdog_config = config.get("watchdog", {})
