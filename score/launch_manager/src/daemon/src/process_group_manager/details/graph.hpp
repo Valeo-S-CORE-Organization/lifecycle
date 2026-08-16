@@ -42,13 +42,7 @@
 #include "score/mw/launch_manager/supervision_control_client/isupervision_event_publisher.hpp"
 #include <score/stop_token.hpp>
 
-namespace score
-{
-
-namespace mw::lifecycle
-{
-
-namespace internal
+namespace score::mw::lifecycle::internal
 {
 
 using WorkerQueue =
@@ -398,10 +392,6 @@ class Graph final
     std::chrono::milliseconds off_state_transition_timeout_{0};
 };
 
-}  // namespace internal
-
-}  // namespace mw::lifecycle
-
-}  // namespace score
+}  // namespace score::mw::lifecycle::internal
 
 #endif  /// GRAPH_HPP_INCLUDED
