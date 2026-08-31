@@ -210,6 +210,8 @@ IComponent::RequestResult ProcessInfoNode::startProcess(score::cpp::stop_token s
                    << "/" << config_.component_properties.binary_name;
 
     std::optional<ComponentError> error;
+    const std::chrono::time_point initial_time = std::chrono::steady_clock::now();
+
     for (std::uint8_t attempts = start_tries_; attempts != 0U; attempts--)
     {
         // setState(kIdle) will fail if the state is:
@@ -233,7 +235,9 @@ IComponent::RequestResult ProcessInfoNode::startProcess(score::cpp::stop_token s
 
         if (osal::OsalReturnType::kSuccess == process_handling_.process_interface_->startProcess(pid_, sync_, config_))
         {
-            LM_LOG_DEBUG() << "startProcess pid" << pid_ << "received for process:" << identifier_;
+            const std::chrono::time_point launched_time = std::chrono::steady_clock::now();
+            LM_LOG_DEBUG() << "startProcess pid" << pid_ << "received for process:" << identifier_ << "( startup time:"
+                           << std::chrono::round<std::chrono::microseconds>(launched_time - initial_time) << ")";
 
             if (configuration::ApplicationType::StateManager ==
                 config_.component_properties.application_profile.application_type)
@@ -267,7 +271,9 @@ IComponent::RequestResult ProcessInfoNode::startProcess(score::cpp::stop_token s
 
         sync_.reset();
     }
-    LM_LOG_DEBUG() << "startProcess for process (" << identifier_ << ") done";
+    const std::chrono::time_point finished_time = std::chrono::steady_clock::now();
+    LM_LOG_DEBUG() << "startProcess for process (" << config_.name << ") done, took"
+                   << std::chrono::round<std::chrono::milliseconds>(finished_time - initial_time);
 
     if (error.has_value())
     {
