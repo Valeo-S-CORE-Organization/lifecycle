@@ -6764,7 +6764,7 @@
   {
     "name": "test_incorrect_config_non_reporting",
     "file": "tests/integration/incorrect_config_non_reporting/test_incorrect_config_non_reporting.py",
-    "line": "20",
+    "line": "19",
     "result": "passed",
     "repo_name": "local_repo",
     "hash": "",
@@ -6904,7 +6904,7 @@
   {
     "name": "test_smoke",
     "file": "tests/integration/smoke/smoke.py",
-    "line": "20",
+    "line": "19",
     "result": "passed",
     "repo_name": "local_repo",
     "hash": "",
