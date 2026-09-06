@@ -172,14 +172,7 @@ class Graph final
     /// @brief Move assignment operator(deleted).
     Graph& operator=(Graph&&) noexcept = delete;
 
-    /// @brief Applies a ComponentEvent — produced by ProcessMonitor from worker/OS-handler thread
-    /// callbacks and drained on the main thread — to this graph.
-    /// @details Dispatches on the event's variant:
-    ///   - ActivationSuccessful / DeactivationComplete: `nodeExecuted(node_identifier, {})`
-    ///   - ActivationFailed: `nodeExecuted(node_identifier, make_unexpected(reason))`
-    ///   - UnexpectedTermination: `abort(1, kErrorAfterReady)` — ProcessMonitor::terminated() only
-    ///     pushes this event once a process has already reached its ready condition, so it is
-    ///     always a post-ready crash.
+    /// @brief Applies a ComponentEvent to this graph.
     /// @param event The event to process.
     void handleComponentEvent(const ComponentEvent& event);
 
@@ -189,10 +182,14 @@ class Graph final
     void cancel();
 
     /// @brief Begin transitioning this process group to the given state.
-    /// Returns false if the state name was not found in the configuration or if the graph
-    /// could not enter kInTransition (for example, because a cancellation is in progress).
+    /// @return False if pg_state is not a recognized run target in this graph's configuration; the
+    /// transition is not started in that case. True otherwise.
     /// @param pg_state The target process group state.
-    void startTransition(IdentifierHash pg_state);
+    bool startTransition(IdentifierHash pg_state);
+
+    /// @return True if pg_state is a run target known to this graph's configuration.
+    /// @param pg_state The process group state to check.
+    bool isValidRunTarget(IdentifierHash pg_state);
 
     /// @brief Begin the initial machine group startup transition.
     /// Behaves like startTransition but also reports the initial state transition result
