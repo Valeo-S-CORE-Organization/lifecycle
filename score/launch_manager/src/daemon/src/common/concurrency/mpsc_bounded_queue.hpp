@@ -67,12 +67,12 @@ class MpscBoundedQueue
     /// @brief Enqueues an item.
     /// @return blank on success; ConcurrencyErrc::kOverflow if the queue is full, or
     ///         ConcurrencyErrc::kStopped if the queue has been stopped.
-    [[nodiscard]] score::ResultBlank push(T&& item)
+    [[nodiscard]] score::Result<void> push(T&& item)
     {
         return push_impl(std::move(item));
     }
 
-    [[nodiscard]] score::ResultBlank push(const T& item)
+    [[nodiscard]] score::Result<void> push(const T& item)
     {
         return push_impl(item);
     }
@@ -82,7 +82,7 @@ class MpscBoundedQueue
     /// @return blank if an item is available (caller should drain via tryPop());
     ///         ConcurrencyErrc::kTimeout if the timeout elapsed with none available, or
     ///         ConcurrencyErrc::kStopped if the queue has been stopped.
-    [[nodiscard]] score::ResultBlank wait(std::chrono::milliseconds timeout)
+    [[nodiscard]] score::Result<void> wait(std::chrono::milliseconds timeout)
     {
         std::unique_lock lock(mutex_);
         SCORE_LANGUAGE_FUTURECPP_ASSERT_MESSAGE(ensure_single_consumer(), "Only a single consumer thread is allowed.");
@@ -99,7 +99,7 @@ class MpscBoundedQueue
         {
             return score::MakeUnexpected(ConcurrencyErrc::kTimeout);
         }
-        return score::ResultBlank{};
+        return score::Result<void>{};
     }
 
     /// @brief Non-blocking pop. Never waits, regardless of whether the queue has been stopped, so
@@ -145,7 +145,7 @@ class MpscBoundedQueue
     }
 
     template <typename U>
-    [[nodiscard]] score::ResultBlank push_impl(U&& item)
+    [[nodiscard]] score::Result<void> push_impl(U&& item)
     {
         std::unique_lock lock(mutex_);
 
@@ -161,7 +161,7 @@ class MpscBoundedQueue
 
         lock.unlock();
         not_empty_cv_.notify_one();
-        return score::ResultBlank{};
+        return score::Result<void>{};
     }
 
     mutable std::mutex mutex_{};

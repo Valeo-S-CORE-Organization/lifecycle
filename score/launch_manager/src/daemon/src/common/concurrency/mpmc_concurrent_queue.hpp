@@ -115,7 +115,7 @@ class MPMCConcurrentQueue
     /// @return Success if item was pushed, Error otherwise.
     ///         Note: If the push returns false, the object is still valid for
     ///         the user.
-    [[nodiscard]] score::ResultBlank push(T&& item, std::chrono::milliseconds timeout = std::chrono::milliseconds{0})
+    [[nodiscard]] score::Result<void> push(T&& item, std::chrono::milliseconds timeout = std::chrono::milliseconds{0})
     {
         return push_impl(std::move(item), timeout);
     }
@@ -127,7 +127,7 @@ class MPMCConcurrentQueue
     ///          previous consumer has finished reading it.
     /// @param timeout Maximum time to wait for a free slot. Zero means wait forever.
     /// @return Success if item was pushed, Error otherwise.
-    [[nodiscard]] score::ResultBlank push(
+    [[nodiscard]] score::Result<void> push(
         const T& item,
         std::chrono::milliseconds timeout = std::chrono::milliseconds{0})
     {
@@ -135,7 +135,7 @@ class MPMCConcurrentQueue
     }
 
     /// @brief Signals all blocked pop() callers to return with a stopped error.
-    [[nodiscard]] score::ResultBlank stop() noexcept
+    [[nodiscard]] score::Result<void> stop() noexcept
     {
         m_stopped.store(true, std::memory_order_release);
 
@@ -150,7 +150,7 @@ class MPMCConcurrentQueue
             return score::MakeUnexpected(ConcurrencyErrc::kOsError);
         }
 
-        return score::ResultBlank{};
+        return score::Result<void>{};
     }
 
     /// @brief Blocks until an item is available or stop() is called.
@@ -222,7 +222,7 @@ class MPMCConcurrentQueue
     }
 
     template <class U>
-    [[nodiscard]] score::ResultBlank push_impl(U&& item, std::chrono::milliseconds timeout)
+    [[nodiscard]] score::Result<void> push_impl(U&& item, std::chrono::milliseconds timeout)
     {
         const auto wait_result =
             (timeout == std::chrono::milliseconds{0}) ? m_spaces.wait() : m_spaces.timedWait(timeout);
@@ -272,7 +272,7 @@ class MPMCConcurrentQueue
             return score::MakeUnexpected(ConcurrencyErrc::kOsError);
         }
 
-        return score::ResultBlank{};
+        return score::Result<void>{};
     }
 
     /// @brief Underlying storage.

@@ -218,7 +218,7 @@ TEST_F(MPMCConcurrentQueueTest_Blocking, PushBlocksWhenFull)
     }
 
     std::atomic<bool> push_completed{false};
-    score::ResultBlank pushed = score::MakeUnexpected(ConcurrencyErrc::kOsError);
+    score::Result<void> pushed = score::MakeUnexpected(ConcurrencyErrc::kOsError);
     std::thread producer([&] {
         pushed = queue4_.push(99);
         push_completed.store(true, std::memory_order_release);
@@ -256,7 +256,7 @@ TEST_F(MPMCConcurrentQueueTest_Blocking, StopUnblocksBlockedProducer)
         ASSERT_TRUE(queue4_.push(i));
     }
 
-    score::ResultBlank pushed = score::MakeUnexpected(ConcurrencyErrc::kOsError);
+    score::Result<void> pushed = score::MakeUnexpected(ConcurrencyErrc::kOsError);
     std::thread producer([&] {
         pushed = queue4_.push(99);
     });
