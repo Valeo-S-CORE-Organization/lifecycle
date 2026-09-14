@@ -64,64 +64,6 @@ class TypeConverterTestBase : public ::testing::Test
 };
 
 // ============================================================================
-// secondsToMs tests
-// ============================================================================
-
-class SecondsToMsTest : public TypeConverterTestBase
-{
-};
-
-TEST_F(SecondsToMsTest, ConvertsPositiveValue)
-{
-    RecordProperty("Description", "A positive seconds value converts to milliseconds.");
-
-    auto result = secondsToMs(1.5);
-
-    ASSERT_THAT(result.has_value(), IsTrue());
-    EXPECT_THAT(*result, Eq(1500U));
-}
-
-TEST_F(SecondsToMsTest, ConvertsZero)
-{
-    RecordProperty("Description", "Zero seconds converts to zero milliseconds.");
-
-    auto result = secondsToMs(0.0);
-
-    ASSERT_THAT(result.has_value(), IsTrue());
-    EXPECT_THAT(*result, Eq(0U));
-}
-
-TEST_F(SecondsToMsTest, RejectsNegativeValue)
-{
-    RecordProperty("Description", "A negative seconds value returns InvalidFormat.");
-
-    auto result = secondsToMs(-1.0);
-
-    ASSERT_THAT(result.has_value(), IsFalse());
-    EXPECT_THAT(result.error(), Eq(IConfigLoader::Error::InvalidFormat));
-}
-
-TEST_F(SecondsToMsTest, RejectsOverflow)
-{
-    RecordProperty("Description", "A value exceeding uint32_t max milliseconds returns InvalidFormat.");
-
-    auto result = secondsToMs(5000000.0);
-
-    ASSERT_THAT(result.has_value(), IsFalse());
-    EXPECT_THAT(result.error(), Eq(IConfigLoader::Error::InvalidFormat));
-}
-
-TEST_F(SecondsToMsTest, RejectsSubMillisecond)
-{
-    RecordProperty("Description", "A positive value that rounds to 0ms returns InvalidFormat.");
-
-    auto result = secondsToMs(0.0001);
-
-    ASSERT_THAT(result.has_value(), IsFalse());
-    EXPECT_THAT(result.error(), Eq(IConfigLoader::Error::InvalidFormat));
-}
-
-// ============================================================================
 // Enum conversion tests
 // ============================================================================
 
@@ -583,7 +525,7 @@ TEST_F(ConverterTest, ConvertReadyConditionWithFileState)
 {
     RecordProperty("Description", "convertReadyCondition maps file_state correctly.");
     ::flatbuffers::FlatBufferBuilder fbb;
-    auto fs = fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::Exists, 0.01 /*polling_interval*/);
+    auto fs = fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::Exists, 10 /*polling_interval_ms*/);
     auto rc = fb::CreateReadyCondition(fbb, ::flatbuffers::nullopt /*process_state*/, fs);
     fbb.Finish(rc);
     const auto* ptr = ::flatbuffers::GetRoot<fb::ReadyCondition>(fbb.GetBufferPointer());
@@ -622,11 +564,12 @@ TEST_F(ConverterTest, ConvertReadyConditionWithNeitherStateDeath)
     EXPECT_DEATH(static_cast<void>(convertReadyCondition(ptr)), ".*");
 }
 
-TEST_F(ConverterTest, ConvertReadyConditionWithInvalidPollingIntervalReturnsError)
+TEST_F(ConverterTest, ConvertReadyConditionWithMissingPollingIntervalReturnsError)
 {
-    RecordProperty("Description", "convertReadyCondition propagates an invalid FileState::polling_interval.");
+    RecordProperty(
+        "Description", "convertReadyCondition propagates a missing FileState::polling_interval_ms as InvalidFormat.");
     ::flatbuffers::FlatBufferBuilder fbb;
-    auto fs = fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::Exists, -1.0 /*polling_interval*/);
+    auto fs = fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::Exists);
     auto rc = fb::CreateReadyCondition(fbb, ::flatbuffers::nullopt /*process_state*/, fs);
     fbb.Finish(rc);
     const auto* ptr = ::flatbuffers::GetRoot<fb::ReadyCondition>(fbb.GetBufferPointer());
@@ -654,10 +597,11 @@ TEST_F(ConverterTest, ConvertFileExistenceStateMapsBothValues)
 
 TEST_F(ConverterTest, ConvertFileStateValid)
 {
-    RecordProperty("Description", "convertFileState maps file_path, an explicit state and polling_interval correctly.");
+    RecordProperty(
+        "Description", "convertFileState maps file_path, an explicit state and polling_interval_ms correctly.");
     ::flatbuffers::FlatBufferBuilder fbb;
     auto fs =
-        fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::NotExisting, 0.3 /*polling_interval*/);
+        fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::NotExisting, 300 /*polling_interval_ms*/);
     fbb.Finish(fs);
     const auto* ptr = ::flatbuffers::GetRoot<fb::FileState>(fbb.GetBufferPointer());
 
@@ -673,7 +617,7 @@ TEST_F(ConverterTest, ConvertFileStateDefaultsToExists)
     RecordProperty("Description", "convertFileState defaults state to Exists if it is not set.");
     ::flatbuffers::FlatBufferBuilder fbb;
     // state is omitted from the buffer since it matches the schema default
-    auto fs = fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::Exists, 0.01 /*polling_interval*/);
+    auto fs = fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::Exists, 10 /*polling_interval_ms*/);
     fbb.Finish(fs);
     const auto* ptr = ::flatbuffers::GetRoot<fb::FileState>(fbb.GetBufferPointer());
 
@@ -683,38 +627,14 @@ TEST_F(ConverterTest, ConvertFileStateDefaultsToExists)
     EXPECT_THAT(result->polling_interval, Eq(std::chrono::milliseconds{10}));
 }
 
-TEST_F(ConverterTest, ConvertFileStateWithoutPollingIntervalDeath)
+TEST_F(ConverterTest, ConvertFileStateWithoutPollingIntervalReturnsError)
 {
     RecordProperty(
         "Description",
-        "convertFileState fires an assertion if polling_interval is not configured, as the configuration script "
-        "always defaults it.");
+        "convertFileState returns InvalidFormat if polling_interval_ms is not configured, as the configuration "
+        "script always defaults it.");
     ::flatbuffers::FlatBufferBuilder fbb;
     auto fs = fb::CreateFileStateDirect(fbb, "/tmp/ready");
-    fbb.Finish(fs);
-    const auto* ptr = ::flatbuffers::GetRoot<fb::FileState>(fbb.GetBufferPointer());
-
-    EXPECT_DEATH(static_cast<void>(convertFileState(*ptr)), ".*");
-}
-
-TEST_F(ConverterTest, ConvertFileStateNegativePollingIntervalReturnsError)
-{
-    RecordProperty("Description", "convertFileState returns InvalidFormat for a negative polling_interval.");
-    ::flatbuffers::FlatBufferBuilder fbb;
-    auto fs = fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::Exists, -0.5 /*polling_interval*/);
-    fbb.Finish(fs);
-    const auto* ptr = ::flatbuffers::GetRoot<fb::FileState>(fbb.GetBufferPointer());
-
-    auto result = convertFileState(*ptr);
-    ASSERT_THAT(result.has_value(), IsFalse());
-    EXPECT_THAT(result.error(), Eq(IConfigLoader::Error::InvalidFormat));
-}
-
-TEST_F(ConverterTest, ConvertFileStateSubMillisecondPollingIntervalReturnsError)
-{
-    RecordProperty("Description", "convertFileState returns InvalidFormat for a sub-millisecond polling_interval.");
-    ::flatbuffers::FlatBufferBuilder fbb;
-    auto fs = fb::CreateFileStateDirect(fbb, "/tmp/ready", fb::FileExistenceState::Exists, 0.0001 /*polling_interval*/);
     fbb.Finish(fs);
     const auto* ptr = ::flatbuffers::GetRoot<fb::FileState>(fbb.GetBufferPointer());
 

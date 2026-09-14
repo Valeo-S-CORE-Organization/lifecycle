@@ -130,9 +130,26 @@ def apply_file_state_defaults(ready_condition):
     ready_condition["file_state"] = {**merged}
 
 
+UINT32_MAX = 0xFFFFFFFF
+
+
 def sec_to_ms(sec: float) -> int:
-    """Convert a duration in seconds (float) to integer milliseconds."""
-    return int(sec * 1000)
+    """Convert a duration in seconds (float) to integer milliseconds.
+
+    Raises ValueError if the value is negative, overflows a uint32, or is a
+    sub-millisecond value that would silently round down to 0ms.
+    """
+    if sec < 0:
+        raise ValueError(f"Negative time value {sec} seconds is not supported")
+    ms = sec * 1000
+    if ms > UINT32_MAX:
+        raise ValueError(
+            f"Time value {sec} seconds exceeds maximum representable milliseconds"
+        )
+    result = int(ms)
+    if sec > 0 and result == 0:
+        raise ValueError(f"Sub-millisecond time value {sec} seconds rounds to 0ms")
+    return result
 
 
 def preprocess_defaults(global_defaults, config):
@@ -313,14 +330,26 @@ def gen_config(output_dir, config, input_filename):
                 "max_indications": alive_sup["max_indications"],
             }
 
+        ready_condition = comp_props.get(
+            "ready_condition", {"process_state": "Running"}
+        )
+        if "file_state" in ready_condition:
+            file_state = ready_condition["file_state"]
+            ready_condition = {
+                **ready_condition,
+                "file_state": {
+                    "file_path": file_state["file_path"],
+                    "state": file_state["state"],
+                    "polling_interval_ms": sec_to_ms(file_state["polling_interval"]),
+                },
+            }
+
         props = {
             "binary_name": comp_props.get("binary_name", ""),
             "application_profile": app_profile,
             "depends_on": comp_props.get("depends_on", []),
             "process_arguments": comp_props.get("process_arguments", []),
-            "ready_condition": comp_props.get(
-                "ready_condition", {"process_state": "Running"}
-            ),
+            "ready_condition": ready_condition,
         }
         component["component_properties"] = props
 

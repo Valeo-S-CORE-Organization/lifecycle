@@ -65,8 +65,8 @@ table FileState {
   file_path:string (required); // required
   // Existence state of the file. Defaults to Exists if not specified.
   state:FileExistenceState = Exists; // optional, defaults to Exists
-  // Time in seconds to wait between each poll if the file is present.
-  polling_interval: double; // required
+  // Time in milliseconds to wait between each poll if the file is present.
+  polling_interval_ms:uint32 = null; // required
 }
 
 // Defines the conditions that determine when the component enters the ready state.

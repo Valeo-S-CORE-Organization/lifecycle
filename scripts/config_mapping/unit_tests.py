@@ -34,8 +34,37 @@ from lifecycle_config import (
     preprocess_defaults,
     schema_validation,
     score_defaults,
+    sec_to_ms,
     SCHED_POLICY_MAP,
 )
+
+# ---------------------------------------------------------------------------
+# sec_to_ms
+# ---------------------------------------------------------------------------
+
+
+def test_sec_to_ms_converts_positive_value():
+    assert sec_to_ms(1.5) == 1500
+
+
+def test_sec_to_ms_converts_zero():
+    assert sec_to_ms(0.0) == 0
+
+
+def test_sec_to_ms_rejects_negative_value():
+    with pytest.raises(ValueError, match="Negative time value"):
+        sec_to_ms(-1.0)
+
+
+def test_sec_to_ms_rejects_overflow():
+    with pytest.raises(ValueError, match="exceeds maximum representable milliseconds"):
+        sec_to_ms(5000000.0)
+
+
+def test_sec_to_ms_rejects_sub_millisecond():
+    with pytest.raises(ValueError, match="rounds to 0ms"):
+        sec_to_ms(0.0001)
+
 
 # ---------------------------------------------------------------------------
 # preprocess_defaults

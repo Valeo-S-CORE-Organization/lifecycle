@@ -51,29 +51,6 @@ std::optional<T> optionalScalarValue(const ::flatbuffers::Optional<T>& field)
 
 }  // anonymous namespace
 
-constexpr double kSecondsToMilliseconds = 1000.0;
-
-score::cpp::expected<uint32_t, IConfigLoader::Error> secondsToMs(double seconds)
-{
-    if (seconds < 0.0)
-    {
-        LM_LOG_ERROR() << "Negative time value " << seconds << " seconds is not supported";
-        return score::cpp::make_unexpected(IConfigLoader::Error::InvalidFormat);
-    }
-    if (seconds * kSecondsToMilliseconds > static_cast<double>(std::numeric_limits<uint32_t>::max()))
-    {
-        LM_LOG_ERROR() << "Time value " << seconds << " seconds exceeds maximum representable milliseconds";
-        return score::cpp::make_unexpected(IConfigLoader::Error::InvalidFormat);
-    }
-    const auto result = static_cast<uint32_t>(seconds * kSecondsToMilliseconds);
-    if (seconds > 0.0 && result == 0U)
-    {
-        LM_LOG_ERROR() << "Sub-millisecond time value " << seconds << " seconds rounds to 0ms";
-        return score::cpp::make_unexpected(IConfigLoader::Error::InvalidFormat);
-    }
-    return result;
-}
-
 ApplicationType convertApplicationType(fb::ApplicationType fb_type)
 {
     switch (fb_type)
@@ -300,14 +277,10 @@ score::cpp::expected<FileState, IConfigLoader::Error> convertFileState(const fb:
 {
     SCORE_LANGUAGE_FUTURECPP_ASSERT_PRD_MESSAGE(
         fb_fs.file_path(), "FileState::file_path must never be nullptr as it is required in the schema");
-    SCORE_LANGUAGE_FUTURECPP_ASSERT_PRD_MESSAGE(
-        fb_fs.polling_interval() != 0.0,
-        "No FileState::polling_interval is configured, this should have been defaulted with the script.");
 
-    auto polling_interval_ms = secondsToMs(fb_fs.polling_interval());
+    auto polling_interval_ms = requireScalarValue(fb_fs.polling_interval_ms(), "FileState::polling_interval_ms");
     if (!polling_interval_ms.has_value())
     {
-        LM_LOG_ERROR() << "Invalid value for FileState::polling_interval";
         return score::cpp::make_unexpected(polling_interval_ms.error());
     }
     return FileState{
