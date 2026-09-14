@@ -16,7 +16,8 @@
 #include <score/assert.hpp>
 
 #include "score/mw/launch_manager/alive_monitor/details/daemon/AliveMonitorImpl.hpp"
-#include "score/mw/launch_manager/alive_monitor/details/daemon/PhmDaemon.hpp"
+#include "score/mw/launch_manager/alive_monitor/details/daemon/CyclicExecutor.hpp"
+#include "score/os/utils/thread.h"
 
 namespace score::mw::lifecycle::internal::saf::daemon
 {
@@ -35,7 +36,7 @@ bool AliveMonitorImpl::init() noexcept
     {
         m_osClock.startMeasurement();
 
-        m_daemon = std::make_unique<PhmDaemon>(m_osClock, supervised_components_);
+        m_daemon = std::make_unique<CyclicExecutor>(m_osClock, supervised_components_);
         EInitCode initResult = m_daemon->init(m_recovery_client, config_);
 
         if (initResult == EInitCode::kNoError)
@@ -61,14 +62,15 @@ bool AliveMonitorImpl::init() noexcept
     return false;
 }
 
-void AliveMonitorImpl::start() noexcept
+void AliveMonitorImpl::startMonitoring() noexcept
 {
     alive_monitor_thread_ = std::thread([this]() {
         threadFn(stop_thread_);
     });
+    score::os::set_thread_name(alive_monitor_thread_, "health_mon");
 }
 
-void AliveMonitorImpl::stop() noexcept
+void AliveMonitorImpl::stopMonitoring() noexcept
 {
     stop_thread_.store(true);
     if (alive_monitor_thread_.joinable())
