@@ -20,10 +20,14 @@
 #include <score/assert.hpp>
 #include <unistd.h>
 #include <cstring>
-#include <sstream>
 
 namespace score::mw::lifecycle::internal
 {
+
+std::ostream& operator<<(std::ostream& os, const ProcessLogId& id)
+{
+    return os << "Name: " << id.identifier << ", PID: " << id.pid;
+}
 
 ProcessInfoNode::ProcessInfoNode(configuration::ComponentConfig&& config, ProcessHandling process_handling)
     : terminator_(),
@@ -47,18 +51,18 @@ ProcessInfoNode::ProcessInfoNode(configuration::ComponentConfig&& config, Proces
             app_profile.alive_supervision.has_value(), "Supervised process did not have alive supervision config");
         const uid_t uid = config_.deployment_config.sandbox.uid;
 
-        LM_LOG_DEBUG() << "Setting up alive supervision for" << logId();
+        LM_LOG_DEBUG() << logId() << "setting up alive supervision";
 
         supervision_handle_ = process_handling_.supervision_factory.constructSupervision(
             identifier_, uid, app_profile.alive_supervision.value());
 
         if (!supervision_handle_)
         {
-            LM_LOG_ERROR() << "Failed to set up alive supervision for" << logId();
+            LM_LOG_ERROR() << logId() << "failed to set up alive supervision";
         }
         else
         {
-            LM_LOG_DEBUG() << "Successfully set up alive supervision for" << logId();
+            LM_LOG_DEBUG() << logId() << "successfully set up alive supervision";
         }
 
         config_.deployment_config.environmental_variables.add(
@@ -213,7 +217,7 @@ IComponent::RequestResult ProcessInfoNode::tryHandleTermination(int32_t process_
         }
         else
         {
-            LM_LOG_WARN() << "Unexpected termination of" << logId() << "exit code" << exit_code_;
+            LM_LOG_WARN() << logId() << "unexpected termination, exit code" << exit_code_;
             res = score::cpp::make_unexpected(IComponent::ComponentError::kErrorAfterReady);
         }
     }
@@ -241,7 +245,7 @@ bool ProcessInfoNode::isSupervised() const
 
 IComponent::RequestResult ProcessInfoNode::startProcess(score::cpp::stop_token stop_token)
 {
-    LM_LOG_DEBUG() << "Starting" << logId() << "from executable" << config_.deployment_config.bin_dir << "/"
+    LM_LOG_DEBUG() << logId() << "starting from executable" << config_.deployment_config.bin_dir << "/"
                    << config_.component_properties.binary_name;
 
     std::optional<ComponentError> error;
@@ -258,7 +262,7 @@ IComponent::RequestResult ProcessInfoNode::startProcess(score::cpp::stop_token s
         // - Terminating: A termination is in progress (allowed)
         if (!setState(score::mw::lifecycle::ProcessState::kIdle))
         {
-            LM_LOG_WARN() << "Starting" << logId() << "failed: termination in progress";
+            LM_LOG_WARN() << logId() << "starting failed: termination in progress";
             error = ComponentError::kErrorBeforeReady;
             break;
         }
@@ -308,7 +312,7 @@ IComponent::RequestResult ProcessInfoNode::startProcess(score::cpp::stop_token s
         sync_.reset();
     }
     const std::chrono::time_point finished_time = std::chrono::steady_clock::now();
-    LM_LOG_DEBUG() << "startProcess for" << logId() << "done, took"
+    LM_LOG_DEBUG() << logId() << "startProcess done, took"
                    << std::chrono::round<std::chrono::milliseconds>(finished_time - initial_time);
 
     if (error.has_value())
@@ -360,11 +364,9 @@ void ProcessInfoNode::setupControlClientChannel()
     std::atomic_store(&control_client_channel_, ControlClientChannel::getControlClientChannel(sync_));
 }
 
-std::string ProcessInfoNode::logId() const
+ProcessLogId ProcessInfoNode::logId() const
 {
-    std::ostringstream oss;
-    oss << "Name: " << identifier_ << ", PID: " << pid_;
-    return oss.str();
+    return {identifier_, pid_};
 }
 
 score::cpp::expected_blank<IComponent::ComponentError> ProcessInfoNode::handleProcessStillStarting(
@@ -407,7 +409,7 @@ score::cpp::expected_blank<IComponent::ComponentError> ProcessInfoNode::handlePr
 
                 if (wait_res != osal::OsalReturnType::kSuccess)
                 {
-                    LM_LOG_ERROR() << "Error waiting for file for" << logId();
+                    LM_LOG_ERROR() << logId() << "error waiting for file";
                 }
 
                 return (wait_res == osal::OsalReturnType::kSuccess) && (exit_code_ == 0);
@@ -426,7 +428,7 @@ score::cpp::expected_blank<IComponent::ComponentError> ProcessInfoNode::handlePr
         return score::cpp::make_unexpected(ComponentError::kErrorBeforeReady);
     }
 
-    LM_LOG_WARN() << "Got kRunning timeout for" << logId();
+    LM_LOG_WARN() << logId() << "got kRunning timeout";
     terminateProcess(stop_token);
     return score::cpp::make_unexpected(ComponentError::kActivationTimedOut);
 }
@@ -457,7 +459,7 @@ ProcessInfoNode::handleProcessStarted(const score::cpp::stop_token& stop_token)
             return handleProcessAlreadyTerminated();
         default:  // Error case when pn == -1
             // really bad fatal error, should not happen, treat as a failure to set the state & kill the process
-            LM_LOG_ERROR() << "Could not add" << logId() << "to process map!";
+            LM_LOG_ERROR() << logId() << "could not add to process map!";
             terminateProcess(stop_token);
             return score::cpp::make_unexpected(ComponentError::kErrorBeforeReady);
     }
@@ -467,37 +469,37 @@ void ProcessInfoNode::handleProcessRunning()
 {
     if (!isReporting())
     {
-        LM_LOG_DEBUG() << "Considered kRunning for non-reporting" << logId();
+        LM_LOG_DEBUG() << logId() << "considered kRunning (non-reporting)";
     }
     else
     {
-        LM_LOG_DEBUG() << "Got kRunning for" << logId();
+        LM_LOG_DEBUG() << logId() << "got kRunning";
     }
 }
 
 void ProcessInfoNode::terminateProcess(const score::cpp::stop_token& stop_token)
 {
-    LM_LOG_DEBUG() << "Terminating" << logId();
+    LM_LOG_DEBUG() << logId() << "terminating";
 
     if (setState(score::mw::lifecycle::ProcessState::kTerminating))
     {
         handleTerminationProcess(stop_token);
     }
-    LM_LOG_DEBUG() << "terminateProcess for" << logId() << "done";
+    LM_LOG_DEBUG() << logId() << "terminateProcess done";
 }
 
 void ProcessInfoNode::handleTerminationProcess(const score::cpp::stop_token& stop_token)
 {
     static_cast<void>(terminator_.init(0U, false));
     has_semaphore_.store(true);
-    LM_LOG_DEBUG() << "Requesting termination of" << logId();
+    LM_LOG_DEBUG() << logId() << "requesting termination";
 
     // handle request termination
     if ((process_handling_.process_interface_->requestTermination(pid_) == osal::OsalReturnType::kFail) ||
         (terminator_.timedWait(std::chrono::milliseconds(config_.deployment_config.shutdown_timeout_ms)) ==
          osal::OsalReturnType::kSuccess))
     {
-        LM_LOG_DEBUG() << "Queuing jobs after regular termination of" << logId();
+        LM_LOG_DEBUG() << logId() << "queuing jobs after regular termination";
     }
     else
     {
@@ -585,3 +587,17 @@ ControlClientChannelP ProcessInfoNode::getControlClientChannel() const
 }
 
 }  // namespace score::mw::lifecycle::internal
+
+#ifdef LC_LOG_SCORE_MW_LOG
+
+namespace score::mw::lifecycle::internal
+{
+
+score::mw::log::LogStream& operator<<(score::mw::log::LogStream& stream, const ProcessLogId& id)
+{
+    return stream << "Name: " << id.identifier << ", PID: " << id.pid;
+}
+
+}  // namespace score::mw::lifecycle::internal
+
+#endif  // LC_LOG_SCORE_MW_LOG
