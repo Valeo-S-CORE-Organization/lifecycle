@@ -31,15 +31,16 @@ namespace score::mw::lifecycle::internal
 {
 
 /// @brief Lightweight, allocation-free formatter for a process's standardized log identity.
-/// @details Streams as "Name: <name>, PID: <pid>". Held by value (both members are trivially
-/// copyable) so it can be passed straight to a log stream without any heap allocation.
+/// @details Streams as "Name:<name>, PID:<pid>" (score::mw::log::LogStream inserts the
+/// separating whitespace itself). Held by value (both members are trivially copyable) so it
+/// can be passed straight to a log stream without any heap allocation.
 struct ProcessLogId
 {
     IdentifierHash identifier;
     osal::ProcessID pid;
 };
 
-/// @brief Streams a ProcessLogId as "Name: <name>, PID: <pid>".
+/// @brief Streams a ProcessLogId as "Name:<name>, PID:<pid>".
 std::ostream& operator<<(std::ostream& os, const ProcessLogId& id);
 
 /// @brief Represents both a process and a component in the graph.

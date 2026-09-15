@@ -24,9 +24,22 @@
 namespace score::mw::lifecycle::internal
 {
 
+namespace
+{
+// Shared by both the std::ostream and score::mw::log::LogStream overloads below so the
+// formatting only lives in one place. mw::log::LogStream automatically inserts a whitespace
+// between successive stream operations, so the literals below intentionally omit it; the
+// plain std::ostream fallback renders slightly more tightly as a result.
+template <typename StreamT>
+StreamT& streamProcessLogId(StreamT& stream, const ProcessLogId& id)
+{
+    return stream << "Name:" << id.identifier << ", PID:" << id.pid;
+}
+}  // namespace
+
 std::ostream& operator<<(std::ostream& os, const ProcessLogId& id)
 {
-    return os << "Name: " << id.identifier << ", PID: " << id.pid;
+    return streamProcessLogId(os, id);
 }
 
 ProcessInfoNode::ProcessInfoNode(configuration::ComponentConfig&& config, ProcessHandling process_handling)
@@ -595,7 +608,7 @@ namespace score::mw::lifecycle::internal
 
 score::mw::log::LogStream& operator<<(score::mw::log::LogStream& stream, const ProcessLogId& id)
 {
-    return stream << "Name: " << id.identifier << ", PID: " << id.pid;
+    return streamProcessLogId(stream, id);
 }
 
 }  // namespace score::mw::lifecycle::internal
