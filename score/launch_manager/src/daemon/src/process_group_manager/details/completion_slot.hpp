@@ -25,10 +25,11 @@ namespace score::mw::lifecycle::internal
 
 /// @brief A non-allocating, single-producer, single-consumer one-shot completion slot.
 ///
-/// Designed to be allocated on the caller's stack frame. The caller passes a pointer
-/// to the slot via an event to the main event loop thread and waits for the result.
-/// This completely avoids dynamic memory allocation in contrast to std::promise/future
-/// or InterruptiblePromise/Future.
+/// Designed to be allocated on the caller's stack frame. The caller passes a non-owning
+/// pointer to the slot via an event to the main event loop thread and blocks unconditionally
+/// in wait() until the consumer completes it. This guarantees the slot remains valid on the
+/// stack for the duration of the operation, avoiding dynamic memory allocation without
+/// exposing unsafe cancellation that could lead to a use-after-free.
 template <typename T>
 class CompletionSlot final
 {
@@ -47,16 +48,12 @@ class CompletionSlot final
         done_.notify();
     }
 
-    /// @brief Blocks until complete() has run or interruption is requested via token.
-    /// @param token A stop_token that can abort the wait.
-    /// @return The completed value, or std::nullopt if the wait was aborted.
-    [[nodiscard]] std::optional<T> wait(score::cpp::stop_token token = {})
+    /// @brief Blocks unconditionally until complete() has run. Called once, by the owning thread.
+    /// @return The completed value.
+    [[nodiscard]] T wait()
     {
-        if (!done_.waitWithAbort(token))
-        {
-            return std::nullopt;
-        }
-        return std::move(value_);
+        static_cast<void>(done_.waitWithAbort(score::cpp::stop_token{}));
+        return std::move(*value_);
     }
 
   private:

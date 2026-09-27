@@ -461,9 +461,7 @@ Result<IdentifierHash> ProcessGroupManager::getActiveRunTarget() const noexcept
         return score::MakeUnexpected(ExecErrc::kFailed);
     }
 
-    const auto get_result = slot.wait(cpp::stop_token{});
-    SCORE_LANGUAGE_FUTURECPP_ASSERT(get_result.has_value());
-    return get_result.value();
+    return slot.wait();
 }
 
 void ProcessGroupManager::handleSetRequestedRunTarget(SetRequestedRunTarget* event) noexcept
@@ -518,9 +516,7 @@ Result<void> ProcessGroupManager::setRequestedRunTarget(IdentifierHash run_targe
         return score::MakeUnexpected(ExecErrc::kFailed);
     }
 
-    const auto get_result = slot.wait(cpp::stop_token{});
-    SCORE_LANGUAGE_FUTURECPP_ASSERT(get_result.has_value());
-    return get_result.value();
+    return slot.wait();
 }
 
 void ProcessGroupManager::registerActiveRunTargetCallback(ActivationCallbackT callback) noexcept

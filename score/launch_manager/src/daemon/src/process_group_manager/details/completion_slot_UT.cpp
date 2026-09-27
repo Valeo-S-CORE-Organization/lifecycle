@@ -78,9 +78,8 @@ TEST_F(CompletionSlotTest, SynchronousCompleteThenWaitReturnsValue)
     CompletionSlot<int> slot;
     slot.complete(42);
 
-    auto result = slot.wait();
-    ASSERT_TRUE(result.has_value());
-    EXPECT_EQ(result.value(), 42);
+    int result = slot.wait();
+    EXPECT_EQ(result, 42);
 }
 
 TEST_F(CompletionSlotTest, SynchronousCompleteResultVoid)
@@ -91,8 +90,7 @@ TEST_F(CompletionSlotTest, SynchronousCompleteResultVoid)
     slot.complete(score::Result<void>{});
 
     auto result = slot.wait();
-    ASSERT_TRUE(result.has_value());
-    EXPECT_TRUE(result.value().has_value());
+    EXPECT_TRUE(result.has_value());
 }
 
 TEST_F(CompletionSlotTest, AsynchronousCompleteFromWorkerThread)
@@ -111,20 +109,7 @@ TEST_F(CompletionSlotTest, AsynchronousCompleteFromWorkerThread)
     worker.join();
 
     ASSERT_TRUE(result.has_value());
-    ASSERT_TRUE(result.value().has_value());
-    EXPECT_EQ(result.value().value(), expected_hash);
-}
-
-TEST_F(CompletionSlotTest, PreCancelledStopTokenAbortsWait)
-{
-    RecordProperty("Description", "Verify CompletionSlot::wait returns nullopt if stop_token is already stopped.");
-
-    CompletionSlot<int> slot;
-    score::cpp::stop_source source;
-    source.request_stop();
-
-    auto result = slot.wait(source.get_token());
-    EXPECT_FALSE(result.has_value());
+    EXPECT_EQ(result.value(), expected_hash);
 }
 
 TEST_F(CompletionSlotTest, ZeroAllocationInCompleteAndWait)
@@ -141,8 +126,7 @@ TEST_F(CompletionSlotTest, ZeroAllocationInCompleteAndWait)
         slot.complete(score::Result<IdentifierHash>{test_hash});
         auto result = slot.wait();
         ASSERT_TRUE(result.has_value());
-        ASSERT_TRUE(result.value().has_value());
-        EXPECT_EQ(result.value().value(), test_hash);
+        EXPECT_EQ(result.value(), test_hash);
     }
 
     g_tracking_enabled = false;
@@ -160,8 +144,7 @@ TEST_F(CompletionSlotTest, ZeroAllocationInResultVoidCompleteAndWait)
         CompletionSlot<score::Result<void>> slot;
         slot.complete(score::Result<void>{});
         auto result = slot.wait();
-        ASSERT_TRUE(result.has_value());
-        EXPECT_TRUE(result.value().has_value());
+        EXPECT_TRUE(result.has_value());
     }
 
     g_tracking_enabled = false;
