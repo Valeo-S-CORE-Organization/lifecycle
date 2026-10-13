@@ -18,7 +18,7 @@
 namespace score::mw::lifecycle::internal
 {
 
-Result<ControlProvider*> ControlProvider::Create(IRunTargetControl* graph) noexcept
+Result<std::unique_ptr<ControlProvider>> ControlProvider::Create(IRunTargetControl* graph) noexcept
 {
     const Result<com::InstanceSpecifier> instance_specifier_result =
         com::InstanceSpecifier::Create(std::string{"LaunchManager/StateManager/Instance"});
@@ -36,7 +36,9 @@ Result<ControlProvider*> ControlProvider::Create(IRunTargetControl* graph) noexc
     }
     LmControlSkeleton skeleton = std::move(skeleton_result).value();
 
-    auto* control_provider = new ControlProvider{std::move(skeleton), graph};
+    // Owned by a `unique_ptr` so that it is freed on any of the failure paths below. Not
+    // `std::make_unique`, because the constructor is private.
+    std::unique_ptr<ControlProvider> control_provider{new ControlProvider{std::move(skeleton), graph}};
 
     const Result<void> setup_activate_run_target_result = control_provider->setupActivateRunTarget();
     if (!setup_activate_run_target_result.has_value())
@@ -103,7 +105,7 @@ void ControlProvider::handleActivateRunTarget(
     const std::optional<IdentifierHash> new_state = IdentifierHash::if_exists(request.run_target_name.data());
     if (!new_state.has_value())
     {
-        LM_LOG_ERROR() << "Activation request failed: run target" << request.run_target_name << "does not exist";
+        LM_LOG_ERROR() << "Activation request failed: Run Target" << request.run_target_name << "does not exist";
 
         response = ActivateRunTargetResponse{
             status : RequestStatus::kRejected,

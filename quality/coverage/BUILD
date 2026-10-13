@@ -13,7 +13,13 @@
 
 # Code coverage (LLVM source-based pipeline). See README.md for details.
 
-load("@score_tooling//coverage:defs.bzl", "score_coverage_reporter", "score_coverage_scope")
+load("@score_coverage//:defs.bzl", "score_coverage_reporter", "score_coverage_scope")
+
+sh_binary(
+    name = "run_coverage",
+    srcs = ["run_coverage.sh"],
+    visibility = ["//visibility:public"],
+)
 
 # Declares which production targets define the coverage scope. Everything in
 # scope but untested shows up at 0%; everything outside is filtered out.
@@ -45,4 +51,14 @@ score_coverage_reporter(
     llvm_cov = "@llvm_toolchain//:llvm-cov",
     llvm_cxxfilt = "@llvm_toolchain_llvm//:bin/llvm-cxxfilt",
     llvm_profdata = "@llvm_toolchain//:llvm-profdata",
+)
+
+# GCOV coverage reporter for QNX code coverage
+score_coverage_reporter(
+    name = "gcov_reporter_wrapper",
+    testonly = True,
+    backend = "gcov",
+    coverage_scope = ":coverage_scope",
+    gcov = "@score_qcc_x86_64_toolchain_pkg//:gcov",
+    tags = ["manual"],  # keeps `bazel build //...` on a Linux host from fetching the QNX SDP
 )

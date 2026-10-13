@@ -408,6 +408,44 @@ cc_library(
     ],
 )
 
+lm_cc_test(
+    name = "process_launcher_UT",
+    srcs = ["process_launcher_UT.cpp"],
+    linkopts = [
+        "-Wl,--wrap=fork",
+        "-Wl,--wrap=execve",
+        "-Wl,--wrap=kill",
+        "-Wl,--wrap=wait",
+        "-Wl,--wrap=access",
+        "-Wl,--wrap=shm_open",
+        "-Wl,--wrap=ftruncate",
+        "-Wl,--wrap=shm_unlink",
+        "-Wl,--wrap=mmap",
+        "-Wl,--wrap=munmap",
+        "-Wl,--wrap=setpgid",
+        "-Wl,--wrap=setgid",
+        "-Wl,--wrap=setuid",
+        "-Wl,--wrap=sched_setscheduler",
+        "-Wl,--wrap=chdir",
+        "-Wl,--wrap=setrlimit",
+        "-Wl,--wrap=getpid",
+        "-Wl,--wrap=fcntl",
+        "-Wl,--wrap=sem_init",
+        "-Wl,--wrap=sem_destroy",
+        "-Wl,--wrap=sem_trywait",
+        "-Wl,--wrap=sem_post",
+        "-Wl,--wrap=msync",
+        "-Wl,--wrap=close",
+        "-Wl,--wrap=fstat",
+    ],
+    linkstatic = True,
+    deps = [
+        ":process_launcher",
+        "//tests/utils/mocks:mock_syscalls",
+        "@googletest//:gtest_main",
+    ],
+)
+
 cc_library(
     name = "dependency_graph",
     hdrs = [

@@ -40,7 +40,7 @@ using ::testing::VariantWith;
 
 const score::filesystem::Path kTestPath{"/tmp/test_config.bin"};
 
-/// Name of the run target the loader appends when the configuration does not provide it.
+/// Name of the Run Target the loader appends when the configuration does not provide it.
 constexpr const char* kOffRunTargetName = "Off";
 
 std::vector<uint8_t> finishBuffer(
@@ -318,7 +318,7 @@ TEST_F(FlatbufferConfigLoaderTest, LoadSingleComponentWithFileState)
 
 TEST_F(FlatbufferConfigLoaderTest, LoadRunTargets)
 {
-    RecordProperty("Description", "Loads run targets with dependencies and transition timeout.");
+    RecordProperty("Description", "Loads Run Targets with dependencies and transition timeout.");
 
     ::flatbuffers::FlatBufferBuilder fbb;
 
@@ -347,7 +347,7 @@ TEST_F(FlatbufferConfigLoaderTest, LoadRunTargets)
 
 TEST_F(FlatbufferConfigLoaderTest, ConfiguredOffRunTargetIsLoadedVerbatim)
 {
-    RecordProperty("Description", "An explicitly configured \"Off\" run target is loaded like any other run target.");
+    RecordProperty("Description", "An explicitly configured \"Off\" Run Target is loaded like any other Run Target.");
 
     ::flatbuffers::FlatBufferBuilder fbb;
 
@@ -370,7 +370,7 @@ TEST_F(FlatbufferConfigLoaderTest, ConfiguredOffRunTargetIsLoadedVerbatim)
 
 TEST_F(FlatbufferConfigLoaderTest, LoadFallbackRunTarget)
 {
-    RecordProperty("Description", "Loads fallback run target with all fields.");
+    RecordProperty("Description", "Loads fallback Run Target with all fields.");
 
     ::flatbuffers::FlatBufferBuilder fbb;
 
@@ -489,7 +489,7 @@ TEST_F(FlatbufferConfigLoaderTest, LoadSwitchRunTargetAction)
 
     ::flatbuffers::FlatBufferBuilder fbb;
 
-    auto target_name = fbb.CreateString("Fallback");
+    auto target_name = fbb.CreateString("fallback_run_target");
     auto switch_action = fb::CreateSwitchRunTargetAction(fbb, target_name);
     auto rt_name = fbb.CreateString("Startup");
     auto rt = fb::CreateRunTarget(
@@ -499,7 +499,7 @@ TEST_F(FlatbufferConfigLoaderTest, LoadSwitchRunTargetAction)
     auto result = loadBuffer(buildConfigWithRunTargets(fbb, rts));
 
     ASSERT_THAT(result.has_value(), IsTrue());
-    EXPECT_THAT(result->runTargets()[0].recovery_action.run_target, Eq("Fallback"));
+    EXPECT_THAT(result->runTargets()[0].recovery_action.run_target, Eq("fallback_run_target"));
 }
 
 TEST_F(FlatbufferConfigLoaderTest, LoadSandbox)
@@ -519,7 +519,8 @@ TEST_F(FlatbufferConfigLoaderTest, LoadSandbox)
         fb::SchedulingPolicy::FIFO,
         50 /*scheduling_priority*/,
         4096 /*max_memory_usage*/,
-        80 /*max_cpu_usage*/);
+        80 /*max_cpu_usage*/,
+        3 /*affinity_mask*/);
 
     auto bin_dir = fbb.CreateString("/opt");
     auto work_dir = fbb.CreateString("/tmp");
@@ -554,6 +555,41 @@ TEST_F(FlatbufferConfigLoaderTest, LoadSandbox)
     EXPECT_THAT(sb.max_memory_usage.value(), Eq(4096U));
     ASSERT_THAT(sb.max_cpu_usage.has_value(), IsTrue());
     EXPECT_THAT(sb.max_cpu_usage.value(), Eq(80U));
+    ASSERT_THAT(sb.affinity_mask.has_value(), IsTrue());
+    EXPECT_THAT(sb.affinity_mask.value(), Eq(3U));
+}
+
+TEST_F(FlatbufferConfigLoaderTest, LoadSandboxWithoutAffinityMaskHasNoValue)
+{
+    RecordProperty("Description", "Sandbox without affinity_mask configured leaves it as std::nullopt.");
+
+    ::flatbuffers::FlatBufferBuilder fbb;
+
+    auto sandbox = buildDefaultSandbox(fbb);
+
+    auto bin_dir = fbb.CreateString("/opt");
+    auto work_dir = fbb.CreateString("/tmp");
+    auto deploy = fb::CreateDeploymentConfig(
+        fbb,
+        500 /*ready_timeout_ms*/,
+        500 /*shutdown_timeout_ms*/,
+        0 /*environmental_variables*/,
+        bin_dir,
+        work_dir,
+        0 /*ready_recovery_action*/,
+        0 /*recovery_action*/,
+        sandbox);
+
+    auto comp = buildDefaultComponent(fbb, "unsandboxed_comp", buildDefaultComponentProperties(fbb), deploy);
+    auto comps = fbb.CreateVector(std::vector<::flatbuffers::Offset<fb::Component>>{comp});
+
+    auto result = loadBuffer(buildConfigWithComponents(fbb, comps));
+
+    ASSERT_THAT(result.has_value(), IsTrue());
+    ASSERT_THAT(result->components().size(), Eq(1U));
+
+    const auto& sb = result->components()[0].deployment_config.sandbox;
+    EXPECT_THAT(sb.affinity_mask.has_value(), IsFalse());
 }
 
 TEST_F(FlatbufferConfigLoaderTest, LoadComponentAliveSupervision)

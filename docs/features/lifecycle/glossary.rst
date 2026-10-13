@@ -41,6 +41,10 @@ Glossary
       Interface to monitor the health of a process, e.g. to check if a process is
       alive or if it is running as expected.
 
+    Lifecycle Interface
+      Interface to report :term:`readiness <Ready State>` of a process to the
+      :term:`Launch Manager`.
+
     Alive Monitoring
       Checks if an application reports an alive state in a certain period.
 
@@ -60,15 +64,18 @@ Glossary
     Component
       A configurable unit in the Launch Manager that describes an executable and its runtime environment (sandbox). Components can be grouped together in Run Targets to define system operational states.
 
+    Component failure
+      A state when the component has failed to reach its :term:`Ready Condition`, a running component has terminated abnormally or its supervision failed.
+
     Ready State
-      A state when the component is ready to provide services to other components.
+      A state when the component has fulfilled its :term:`Ready Condition`, i.e. is ready to provide services to other components.
 
     Dependency (between components)
       A configuration parameter indicating that **Component A** can only start
       after **Component B** has reached its :term:`Ready State`. In this case,
       **Component A** depends on **Component B**.
 
-    Dependency (between run targets)
+    Dependency (between Run Targets)
       A configuration parameter indicating that **Run Target A** includes all
       components from **Run Target B**. In this case, **Run Target A** depends
       on **Run Target B**.
@@ -101,7 +108,7 @@ Glossary
       Address Space Layout Randomization - a security technique that randomizes the memory layout of processes.
 
     Recovery Action
-      Actions taken by the Launch Manager when a process fails or terminates abnormally.
+      Actions taken by the Launch Manager as a response to a :term:`Component failure` or :term:`Run Target` activation failure.
 
     Ready Condition
       A configurable condition that must be satisfied before a component is considered ready and operational. Ready conditions can include file system checks, network availability, or custom application-specific signals.
@@ -109,7 +116,11 @@ Glossary
       Ready conditions can either be reported by the component itself through the Lifecycle Interface or determined via external state monitoring. External state examples include: process started, file is available, socket was opened, or that the process finished successfully.
 
     Liveliness
-      The state indicating that a process is active and responding as expected.
+      Term indicating that a :term:`Component` is periodically sending an alive notification (using the
+      :need:`logic_arc_int_op__lifecycle__report_alive` interface) as per configuration.
+
+    Monitoring of Processes
+      The activity of observing and checking if a process is running or has been exited with an abnormal status.
 
     Watchdog
       A monitoring mechanism that detects system failures and can trigger recovery actions.
@@ -130,8 +141,11 @@ Glossary
     SWC
       Software Components - modular software units that can be independently managed.
 
-    Run target
-      A named collection of processes and their dependencies that can be launched, stopped, or switched as a group to achieve a specific operational mode or configuration.
+    Run Target
+      A named collection of components and their dependencies that can be activated, stopped, or switched as a group to achieve a specific operational mode or configuration.
+
+    Fallback Run Target
+      A designated Run Target that the system can switch to in case the current active Run Target resp. one of its components fails. 
 
     Operating System
       The system software that manages computer hardware and software resources and provides common services for computer programs.

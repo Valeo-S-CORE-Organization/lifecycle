@@ -362,7 +362,7 @@ score::cpp::expected_blank<IComponent::ComponentError> ProcessInfoNode::handlePr
                     sync_, std::chrono::milliseconds(config_.deployment_config.ready_timeout_ms));
                 return (wait_res == osal::OsalReturnType::kSuccess) && (exit_code_ == 0);
             }
-            // req-id: comp_req__launch_man__path_condition_check
+            // req-id: comp_req__launch_man__rc_file_state
             else if constexpr (std::is_same_v<T, configuration::FileState>)
             {
 
@@ -370,7 +370,7 @@ score::cpp::expected_blank<IComponent::ComponentError> ProcessInfoNode::handlePr
                 {
                     // currently we do not support multiple ready conditions so we need
                     // to ignore the krunning signal.
-                    auto wait_res = process_handling_.process_interface_->ignoreRunning(sync_);
+                    auto wait_res = process_handling_.process_interface_->waitForkRunning(sync_, std::nullopt);
                     static_cast<void>(wait_res);
                 }
 

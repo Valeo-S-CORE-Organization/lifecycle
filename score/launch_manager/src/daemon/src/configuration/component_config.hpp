@@ -74,7 +74,7 @@ using ReadyCondition = std::variant<ProcessState, FileState>;
 struct ComponentProperties
 {
     std::string binary_name;
-    ApplicationProfile application_profile;
+    ApplicationProfile application_profile{};
     std::vector<std::string> depends_on;
     std::vector<std::string> process_arguments;
 
@@ -91,6 +91,7 @@ struct Sandbox
     std::int32_t scheduling_priority{};
     std::optional<std::uint64_t> max_memory_usage;
     std::optional<std::uint32_t> max_cpu_usage;
+    std::optional<std::uint64_t> affinity_mask;
 };
 
 struct DeploymentConfig
@@ -104,15 +105,15 @@ struct DeploymentConfig
     std::optional<RestartAction> ready_recovery_action;
     // Currently only SwitchRunTargetAction is supported here, RestartAction to be added in the future
     std::optional<SwitchRunTargetAction> recovery_action;
-    Sandbox sandbox;
+    Sandbox sandbox{};
 };
 
 struct ComponentConfig
 {
     std::string name;
     std::string description;
-    ComponentProperties component_properties;
-    DeploymentConfig deployment_config;
+    ComponentProperties component_properties{};
+    DeploymentConfig deployment_config{};
 };
 
 }  // namespace score::mw::lifecycle::internal::configuration

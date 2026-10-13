@@ -415,6 +415,7 @@ score::cpp::expected<Sandbox, IConfigLoader::Error> convertSandbox(const fb::San
     result.scheduling_priority = *scheduling_priority;
     result.max_memory_usage = optionalScalarValue(fb_sb->max_memory_usage());
     result.max_cpu_usage = optionalScalarValue(fb_sb->max_cpu_usage());
+    result.affinity_mask = optionalScalarValue(fb_sb->affinity_mask());
     return result;
 }
 
@@ -623,7 +624,7 @@ score::cpp::expected<std::vector<RunTargetConfig>, IConfigLoader::Error> convert
             auto run_target = convertRunTarget(rt);
             if (!run_target.has_value())
             {
-                LM_LOG_ERROR() << "Failed to load configuration for RunTarget '" << safeString(rt->name()) << "'";
+                LM_LOG_ERROR() << "Failed to load configuration for Run Target '" << safeString(rt->name()) << "'";
                 return score::cpp::make_unexpected(run_target.error());
             }
             run_targets.emplace_back(std::move(*run_target));

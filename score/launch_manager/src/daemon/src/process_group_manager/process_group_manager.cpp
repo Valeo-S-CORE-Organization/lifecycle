@@ -99,8 +99,6 @@ bool ProcessGroupManager::initialize()
         return false;
     }
 
-    LM_LOG_DEBUG() << "Process Group initialization done";
-
     alive_monitor_->startMonitoring();
 
     // Watchdog config may not be available if no watchdog is configured
@@ -152,7 +150,7 @@ bool ProcessGroupManager::initializeProcessGroups()
         worker_jobs_,
         ProcessHandling{&process_interface_, process_map_, &file_waiter_, alive_monitor_->getSupervisionFactory()});
 
-    LM_LOG_DEBUG() << "Process group initialized successfully";
+    LM_LOG_DEBUG() << "Graph initialized successfully";
     return true;
 }
 
@@ -187,8 +185,7 @@ void ProcessGroupManager::createProcessComponentsObjects(std::size_t total_proce
 
 bool ProcessGroupManager::run()
 {
-    LM_LOG_DEBUG() << "clock() at run():"
-                   << (static_cast<double>(clock()) / (static_cast<double>(CLOCKS_PER_SEC) / 1000.0)) << "ms";
+    LM_LOG_DEBUG() << "run() at" << TIMESTAMP_MS();
 
     bool result = startInitialTransition();
     bool overflow_logged = false;
@@ -258,7 +255,6 @@ void ProcessGroupManager::processComponentEvents()
 
 bool ProcessGroupManager::startInitialTransition()
 {
-    LM_LOG_DEBUG() << "=============STARTING STARTUP STATE============";
     SCORE_LANGUAGE_FUTURECPP_ASSERT_MESSAGE(bool(graph_), "Graph not initialized");
     graph_->startInitialTransition(IdentifierHash{configuration_.initial_run_target_});
     return true;
@@ -300,27 +296,24 @@ void ProcessGroupManager::allProcessGroupsOff()
     // First, check if we're already transitioning to Off - if so, no need to cancel
     if (!graph_->isTransitioningToOff())
     {
-        // Cancel any pending transitions that are not going to Off
-        LM_LOG_DEBUG() << "Cancel process group transition";
+        LM_LOG_DEBUG() << "Cancel transition";
         graph_->cancel();
 
-        // Wait for cancellation to complete
-        LM_LOG_DEBUG() << "Wait for process group cancellation";
-        if (!waitForStateCompletion(GraphState::kCancelled, 2000))
+        LM_LOG_DEBUG() << "Wait for transition cancellation";
+        if (!waitForStateCompletion(GraphState::kAborting, 2000))
         {
             LM_LOG_ERROR() << "NOTE: Cancellation timed out";
         }
 
-        // Start transitioning the process group to the "Off" state
-        LM_LOG_DEBUG() << "Start transitioning process group to Off state";
+        LM_LOG_DEBUG() << "Start transitioning to Off Run Target";
         (void)graph_->startTransitionToOffState();
     }
     else
     {
-        LM_LOG_DEBUG() << "Already transitioning to Off state, skipping cancellation";
+        LM_LOG_DEBUG() << "Already transitioning to Off Run Target, skipping cancellation";
     }
 
-    LM_LOG_DEBUG() << "Wait for process group to complete the transition";
+    LM_LOG_DEBUG() << "Wait for transition completion";
 
     const auto overall_off_transition_timeout = graph_->getOffStateTransitionTimeout() + kMaxSigKillDelay;
     if (!waitForStateCompletion(
@@ -328,7 +321,7 @@ void ProcessGroupManager::allProcessGroupsOff()
     {
         // Last resort: a process ignored even SIGKILL within its budget. Force-kill
         // whatever is left and tear down the worker pool so shutdown can still proceed.
-        LM_LOG_ERROR() << "NOTE: Transition to Off state timed out";
+        LM_LOG_ERROR() << "NOTE: Transition to Off Run Target timed out";
         thread_pool_->stop();
         graph_->forceKillProcesses();
         thread_pool_.reset();
@@ -340,8 +333,6 @@ void ProcessGroupManager::handleRecoveryRequest(const IdentifierHash& process_id
     SCORE_LANGUAGE_FUTURECPP_ASSERT_MESSAGE(bool(graph_), "Graph not initialized");
 
     const IdentifierHash old_state = graph_->getRequestedRunTarget();
-    // the fallback state doesn't have a name in the config, so we use
-    // "fallback", it doesn't actually matter...
     const GraphState graph_state = graph_->getState();
 
     LM_LOG_DEBUG() << "handleRecoveryRequest: Processing recovery request for process" << process_identifier
@@ -352,30 +343,30 @@ void ProcessGroupManager::handleRecoveryRequest(const IdentifierHash& process_id
         if (old_state != recovery_state_)
         {
             // Cancel current transition and start new one
-            (void)graph_->setPendingState(recovery_state_);
+            (void)graph_->setPendingState(recovery_state_, RunTargetActivationSource::kRecoveryAction);
             graph_->setRequestStartTime();
             graph_->cancel();
         }
         else
         {
             // Already in transition to the requested state
-            LM_LOG_DEBUG() << "handleRecoveryRequest: Already transitioning to same state";
+            LM_LOG_DEBUG() << "handleRecoveryRequest: Already transitioning to same Run Target";
         }
     }
     else if (GraphState::kSuccess == graph_state && old_state == recovery_state_)
     {
         // Already in the requested state
-        LM_LOG_DEBUG() << "handleRecoveryRequest: Already in requested state";
+        LM_LOG_DEBUG() << "handleRecoveryRequest: Already in requested Run Target";
     }
     else
     {
         // Start new state transition
-        (void)graph_->setPendingState(recovery_state_);
+        (void)graph_->setPendingState(recovery_state_, RunTargetActivationSource::kRecoveryAction);
         graph_->setRequestStartTime();
     }
 }
 
-void ProcessGroupManager::processGroupHandler(Graph& pg)
+void ProcessGroupManager::processGroupHandler(Graph& pg)https://github.com/eclipse-score/lifecycle/pull/699/conflict?name=score%252Flaunch_manager%252Fsrc%252Fdaemon%252Fsrc%252Fprocess_group_manager%252Fprocess_group_manager.cpp&ancestor_oid=0bee172ea8f0c45eda2a3090705779797b94238a&base_oid=b758bd00dca5d9e90c4306fedc0863b7fdd2295b&head_oid=073cf90aa6453927f3ac2268507a342f9db358b3
 {
     // check to see if there is a state change request to process
     // If current pg not in transition and there is a pending request state
@@ -384,6 +375,7 @@ void ProcessGroupManager::processGroupHandler(Graph& pg)
 
     if (GraphState::kSuccess == graph_state || GraphState::kUndefinedState == graph_state)
     {
+        const RunTargetActivationSource last_source = pg.getPendingTransition().source;
         IdentifierHash last_state = pg.setPendingState(IdentifierHash(""));
 
         if ((last_state != IdentifierHash("")) &&
@@ -392,14 +384,15 @@ void ProcessGroupManager::processGroupHandler(Graph& pg)
             LM_LOG_DEBUG() << "Start transition to" << last_state;
 
             // Already rejected via isValidRunTarget() in processStateTransition() (#541) if invalid.
-            const bool started = pg.startTransition(last_state);
-            SCORE_LANGUAGE_FUTURECPP_ASSERT_MESSAGE(started, "pending state was not rejected by isValidRunTarget()");
+            const bool started = pg.startTransition(last_state, last_source);
+            SCORE_LANGUAGE_FUTURECPP_ASSERT_MESSAGE(
+                started, "pending Run Target was not rejected by isValidRunTarget()");
         }
 
         if (GraphState::kUndefinedState == pg.getState())
         {
             // at the moment graph is not running...
-            // i.e. it is not in kInTransition, kAborting or kCancelled state
+            // i.e. it is not in kInTransition or kAborting state
             //
             // in short, graph is in an error state (kUndefinedState)
             // and there is no valid request from outside, to change this situation...
@@ -412,8 +405,9 @@ void ProcessGroupManager::processGroupHandler(Graph& pg)
             // nobody requested this transition, so there is nowhere to communicate an error
             // if we failed and there is no external request, we will try again next time
             pg.setRequestStartTime();
-            const bool started = pg.startTransition(IdentifierHash{Graph::recovery_state_name});
-            SCORE_LANGUAGE_FUTURECPP_ASSERT_MESSAGE(started, "fallback RunTarget node missing");
+            const bool started = pg.startTransition(
+                IdentifierHash{Graph::recovery_state_name}, RunTargetActivationSource::kRecoveryAction);
+            SCORE_LANGUAGE_FUTURECPP_ASSERT_MESSAGE(started, "fallback Run Target node missing");
         }
     }
 }
@@ -438,7 +432,6 @@ void ProcessGroupManager::handleGetActiveRunTarget(GetActiveRunTarget* event) co
             result = graph_->getRequestedRunTarget();
             break;
         case GraphState::kAborting:
-        case GraphState::kCancelled:
         case GraphState::kInTransition:
         case GraphState::kUndefinedState:
             result = score::MakeUnexpected(ExecErrc::kActivationInProgress);
