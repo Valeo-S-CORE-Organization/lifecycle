@@ -366,7 +366,7 @@ void ProcessGroupManager::handleRecoveryRequest(const IdentifierHash& process_id
     }
 }
 
-void ProcessGroupManager::processGroupHandler(Graph& pg)https://github.com/eclipse-score/lifecycle/pull/699/conflict?name=score%252Flaunch_manager%252Fsrc%252Fdaemon%252Fsrc%252Fprocess_group_manager%252Fprocess_group_manager.cpp&ancestor_oid=0bee172ea8f0c45eda2a3090705779797b94238a&base_oid=b758bd00dca5d9e90c4306fedc0863b7fdd2295b&head_oid=073cf90aa6453927f3ac2268507a342f9db358b3
+void ProcessGroupManager::processGroupHandler(Graph& pg)
 {
     // check to see if there is a state change request to process
     // If current pg not in transition and there is a pending request state
