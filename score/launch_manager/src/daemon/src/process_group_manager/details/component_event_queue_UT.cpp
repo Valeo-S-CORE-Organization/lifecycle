@@ -83,8 +83,7 @@ TEST_F(ComponentEventQueueTest, GetNextEventReturnsSupervisionFailureWithPayload
 TEST_F(ComponentEventQueueTest, GetNextEventReturnsGetActiveRunTargetWithCompletionSlot)
 {
     RecordProperty(
-        "Description",
-        "Verify a pushed GetActiveRunTarget event is returned with its CompletionSlot pointer intact.");
+        "Description", "Verify a pushed GetActiveRunTarget event is returned with its CompletionSlot pointer intact.");
     CompletionSlot<Result<IdentifierHash>> slot;
     EXPECT_TRUE(queue_.push(GetActiveRunTarget{completion : &slot}));
 
@@ -99,7 +98,8 @@ TEST_F(ComponentEventQueueTest, GetNextEventReturnsSetRequestedRunTargetWithPayl
 {
     RecordProperty(
         "Description",
-        "Verify a pushed SetRequestedRunTarget event is returned with its run_target and CompletionSlot pointer intact.");
+        "Verify a pushed SetRequestedRunTarget event is returned with its run_target and CompletionSlot pointer "
+        "intact.");
     CompletionSlot<Result<void>> slot;
     const IdentifierHash target{"RunTargetA"};
     EXPECT_TRUE(queue_.push(SetRequestedRunTarget{run_target : target, completion : &slot}));

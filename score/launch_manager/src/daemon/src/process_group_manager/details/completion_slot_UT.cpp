@@ -114,7 +114,8 @@ TEST_F(CompletionSlotTest, AsynchronousCompleteFromWorkerThread)
 
 TEST_F(CompletionSlotTest, ZeroAllocationInCompleteAndWait)
 {
-    RecordProperty("Description", "Verify CompletionSlot complete() and wait() perform zero dynamic memory allocations.");
+    RecordProperty(
+        "Description", "Verify CompletionSlot complete() and wait() perform zero dynamic memory allocations.");
 
     const IdentifierHash test_hash{"Running"};
 
